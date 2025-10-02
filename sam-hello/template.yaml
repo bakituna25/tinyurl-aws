@@ -33,3 +33,9 @@ Resources:
           Properties:
             Path: /hello
             Method: get
+            RestApiId: !Ref HelloApi   # <<<<< ÖNEMLİ: Bu satır ile fonksiyonu HelloApi'ye bağlıyoruz
+
+Outputs:
+  HelloApiUrl:
+    Description: Invoke URL for GET /hello
+    Value: !Sub "https://${HelloApi}.execute-api.${AWS::Region}.amazonaws.com/prod/hello"
