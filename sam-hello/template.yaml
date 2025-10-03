@@ -15,6 +15,7 @@ Globals:
       AllowHeaders: "'Content-Type,Authorization'"
 
 Resources:
+  # --- Hello (test) ---
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -27,6 +28,7 @@ Resources:
             Path: /hello
             Method: GET
 
+  # --- Create URL ---
   CreateUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -34,7 +36,14 @@ Resources:
       Handler: app.lambda_handler
       Environment:
         Variables:
-          TABLE_NAME: url-mappings         # Mevcut tablo adı (oluşturulmuyor)
+          TABLE_NAME: url-mappings
+          # ADDED: Tam kısa URL döndürmek için Base URL
+          BASE_URL: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+          # (Opsiyonel) Redis/S3 – şimdi boş bırak, sonra doldurabilirsin
+          # REDIS_HOST: ""
+          # REDIS_PORT: "6379"
+          # CACHE_TTL_SEC: "86400"
+          # ARCHIVE_BUCKET: ""
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -46,6 +55,7 @@ Resources:
             Path: /url
             Method: POST
 
+  # --- Redirect URL ---
   RedirectUrlFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -54,6 +64,11 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: url-mappings
+          # (Opsiyonel) Redis/S3 – ileride kullanmak üzere
+          # REDIS_HOST: ""
+          # REDIS_PORT: "6379"
+          # CACHE_TTL_SEC: "86400"
+          # ARCHIVE_BUCKET: ""
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -65,7 +80,25 @@ Resources:
             Path: /{shortCode}
             Method: GET
 
+  # --- CloudWatch Log Retention (ADDED) ---
+  CreateUrlLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${CreateUrlFunction}"
+      RetentionInDays: 14
+  RedirectUrlLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${RedirectUrlFunction}"
+      RetentionInDays: 14
+  HelloLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub "/aws/lambda/${HelloWorldFunction}"
+      RetentionInDays: 14
+
 Outputs:
+  # Var olanlar
   HelloApiUrl:
     Description: Invoke URL for GET /hello
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
@@ -73,3 +106,14 @@ Outputs:
   UrlApiBase:
     Description: Base URL for TinyURL
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  # ADDED: ekstra çıktı bilgileri
+  ApiId:
+    Description: API Gateway RestApi Id
+    Value: !Ref ServerlessRestApi
+  CreateUrlFunctionArn:
+    Description: Create URL Lambda ARN
+    Value: !GetAtt CreateUrlFunction.Arn
+  RedirectUrlFunctionArn:
+    Description: Redirect URL Lambda ARN
+    Value: !GetAtt RedirectUrlFunction.Arn
