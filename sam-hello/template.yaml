@@ -1,41 +1,102 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: Milestone 1 – Hello World (SAM + API Gateway)
+Description: TinyURL - SAM stack (Hello + Create + Redirect + DynamoDB)
 
 Globals:
   Function:
     Runtime: python3.12
-    Timeout: 5
-    MemorySize: 128
-    Architectures:
-      - x86_64
+    Timeout: 10
+    MemorySize: 256
+    Architectures: [ arm64 ]
 
 Resources:
-  HelloApi:
+  TinyUrlApi:
     Type: AWS::Serverless::Api
     Properties:
       StageName: prod
       Cors:
-        AllowMethods: "'GET,OPTIONS'"
+        AllowOrigins: "'*'"
+        AllowMethods: "'GET,POST,OPTIONS'"
         AllowHeaders: "'Content-Type,Authorization'"
-        AllowOrigin: "'*'"
+
+  UrlTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: url-mappings
+      BillingMode: PAYPERREQUEST
+      AttributeDefinitions:
+        - AttributeName: shortCode
+          AttributeType: S
+      KeySchema:
+        - AttributeName: shortCode
+          KeyType: HASH
 
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: hello_world/
       Handler: app.lambda_handler
-      Policies:
-        - AWSLambdaBasicExecutionRole
       Events:
         GetHello:
           Type: Api
           Properties:
+            RestApiId: !Ref TinyUrlApi
             Path: /hello
-            Method: get
-            RestApiId: !Ref HelloApi   # <<<<< ÖNEMLİ: Bu satır ile fonksiyonu HelloApi'ye bağlıyoruz
+            Method: GET
+
+  CreateUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: create_url/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UrlTable
+          # BASE_URL'i otomatik API URL olarak veriyoruz:
+          BASE_URL: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+          # REDIS_HOST/PORT istersen daha sonra ekle
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlTable
+      Events:
+        PostUrl:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TinyUrlApi
+            Path: /url
+            Method: POST
+
+  RedirectUrlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: redirect_url/
+      Handler: app.lambda_handler
+      Environment:
+        Variables:
+          TABLE_NAME: !Ref UrlTable
+          # Opsiyonel (Redis/S3 ekleyince kullanırız):
+          # REDIS_HOST: ""
+          # REDIS_PORT: "6379"
+          # CACHE_TTL_SEC: "86400"
+          # ARCHIVE_BUCKET: ""
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        - DynamoDBCrudPolicy:
+            TableName: !Ref UrlTable
+      Events:
+        GetShort:
+          Type: Api
+          Properties:
+            RestApiId: !Ref TinyUrlApi
+            Path: /{shortCode}
+            Method: GET
 
 Outputs:
   HelloApiUrl:
     Description: Invoke URL for GET /hello
-    Value: !Sub "https://${HelloApi}.execute-api.${AWS::Region}.amazonaws.com/prod/hello"
+    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod/hello"
+
+  UrlApiBase:
+    Description: Base URL for TinyURL
+    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
