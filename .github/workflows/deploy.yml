@@ -37,7 +37,7 @@ jobs:
             --stack-name tinyurl-m1-hello-v2 \
             --resolve-s3 \
             --no-confirm-changeset \
-            --no-fail-on-empty-changeset \   
+            --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM \
             --region ${{ secrets.AWS_REGION }}
 
