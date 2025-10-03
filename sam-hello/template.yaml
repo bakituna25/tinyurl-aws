@@ -23,7 +23,7 @@ Resources:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: url-mappings
-      BillingMode: PAYPERREQUEST
+      BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: shortCode
           AttributeType: S
@@ -52,9 +52,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UrlTable
-          # BASE_URL'i otomatik API URL olarak veriyoruz:
           BASE_URL: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
-          # REDIS_HOST/PORT istersen daha sonra ekle
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -75,11 +73,10 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UrlTable
-          # Opsiyonel (Redis/S3 ekleyince kullanırız):
-          # REDIS_HOST: ""
+          # REDIS_HOST: ""         # (opsiyonel) ekleyince Redis devreye girer
           # REDIS_PORT: "6379"
           # CACHE_TTL_SEC: "86400"
-          # ARCHIVE_BUCKET: ""
+          # ARCHIVE_BUCKET: ""     # (opsiyonel) S3 arşiv için
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
