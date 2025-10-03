@@ -8,17 +8,14 @@ Globals:
     Timeout: 10
     MemorySize: 256
     Architectures: [ arm64 ]
+  Api:
+    StageName: prod
+    Cors:
+      AllowOrigin: "'*'"
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
 
 Resources:
-  TinyUrlApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      StageName: prod
-      Cors:
-        AllowOrigin: "'*'"
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-
   UrlTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -40,7 +37,6 @@ Resources:
         GetHello:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /hello
             Method: GET
 
@@ -52,7 +48,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UrlTable
-          BASE_URL: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+          BASE_URL: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -61,7 +57,6 @@ Resources:
         PostUrl:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /url
             Method: POST
 
@@ -73,6 +68,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UrlTable
+          # İleride Redis/S3 ekleyince buraya env koyabiliriz
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -81,15 +77,14 @@ Resources:
         GetShort:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /{shortCode}
             Method: GET
 
 Outputs:
   HelloApiUrl:
     Description: Invoke URL for GET /hello
-    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod/hello"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod/hello"
 
   UrlApiBase:
     Description: Base URL for TinyURL
-    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/prod"
