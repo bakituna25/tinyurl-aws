@@ -9,7 +9,7 @@ Globals:
     MemorySize: 256
     Architectures: [ arm64 ]
   Api:
-    # StageName burada desteklenmez; implicit API için varsayılan "Prod" kullanılır
+    # Implicit API; stage varsayılan "Prod"
     Cors:
       AllowOrigin: "'*'"
       AllowMethods: "'GET,POST,OPTIONS'"
@@ -48,7 +48,7 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: !Ref UrlTable
-          BASE_URL: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+          # BASE_URL KALDIRILDI -> circular dependency'i kırmak için
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
