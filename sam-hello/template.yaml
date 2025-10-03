@@ -9,25 +9,12 @@ Globals:
     MemorySize: 256
     Architectures: [ arm64 ]
   Api:
-    # Implicit API; stage varsayılan "Prod"
     Cors:
       AllowOrigin: "'*'"
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type,Authorization'"
 
 Resources:
-  UrlTable:
-    Type: AWS::DynamoDB::Table
-    Properties:
-      TableName: url-mappings
-      BillingMode: PAY_PER_REQUEST
-      AttributeDefinitions:
-        - AttributeName: shortCode
-          AttributeType: S
-      KeySchema:
-        - AttributeName: shortCode
-          KeyType: HASH
-
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -47,12 +34,11 @@ Resources:
       Handler: app.lambda_handler
       Environment:
         Variables:
-          TABLE_NAME: !Ref UrlTable
-          # BASE_URL KALDIRILDI -> circular dependency'i kırmak için
+          TABLE_NAME: url-mappings   # <— düz isim
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
-            TableName: !Ref UrlTable
+            TableName: url-mappings # <— düz isim
       Events:
         PostUrl:
           Type: Api
@@ -67,11 +53,11 @@ Resources:
       Handler: app.lambda_handler
       Environment:
         Variables:
-          TABLE_NAME: !Ref UrlTable
+          TABLE_NAME: url-mappings   # <— düz isim
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
-            TableName: !Ref UrlTable
+            TableName: url-mappings # <— düz isim
       Events:
         GetShort:
           Type: Api
