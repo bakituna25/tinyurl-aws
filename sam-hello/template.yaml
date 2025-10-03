@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: TinyURL - SAM stack (Hello + Create + Redirect)
+Description: TinyURL - SAM stack (Hello + Create + Redirect) - implicit API
 
 Globals:
   Function:
@@ -8,18 +8,13 @@ Globals:
     Timeout: 10
     MemorySize: 256
     Architectures: [ arm64 ]
+  Api:
+    Cors:
+      AllowOrigin: "'*'"
+      AllowMethods: "'GET,POST,OPTIONS'"
+      AllowHeaders: "'Content-Type,Authorization'"
 
 Resources:
-  TinyUrlApi:
-    Type: AWS::Serverless::Api
-    Properties:
-      Name: tinyurl-api
-      StageName: Prod
-      Cors:
-        AllowOrigin: "'*'"
-        AllowMethods: "'GET,POST,OPTIONS'"
-        AllowHeaders: "'Content-Type,Authorization'"
-
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -29,7 +24,6 @@ Resources:
         GetHello:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /hello
             Method: GET
 
@@ -40,8 +34,7 @@ Resources:
       Handler: app.lambda_handler
       Environment:
         Variables:
-          TABLE_NAME: url-mappings        # mevcut tablo adı
-          BASE_URL: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+          TABLE_NAME: url-mappings         # Mevcut tablo adı (oluşturulmuyor)
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -50,7 +43,6 @@ Resources:
         PostUrl:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /url
             Method: POST
 
@@ -62,7 +54,6 @@ Resources:
       Environment:
         Variables:
           TABLE_NAME: url-mappings
-          # İlerde Redis/S3 için env ekleyebilirsin
       Policies:
         - AWSLambdaBasicExecutionRole
         - DynamoDBCrudPolicy:
@@ -71,15 +62,14 @@ Resources:
         GetShort:
           Type: Api
           Properties:
-            RestApiId: !Ref TinyUrlApi
             Path: /{shortCode}
             Method: GET
 
 Outputs:
   HelloApiUrl:
     Description: Invoke URL for GET /hello
-    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello"
 
   UrlApiBase:
     Description: Base URL for TinyURL
-    Value: !Sub "https://${TinyUrlApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
