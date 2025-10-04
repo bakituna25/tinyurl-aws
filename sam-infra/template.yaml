@@ -1,0 +1,26 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: TinyURL - Infra Stack (HttpApi only)
+
+Resources:
+  TinyUrlHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      CorsConfiguration:
+        AllowOrigins: ['*']
+        AllowMethods: ['GET', 'POST', 'OPTIONS']
+        AllowHeaders: ['Content-Type', 'Authorization']
+      # $default stage auto-deploy
+
+Outputs:
+  ApiId:
+    Description: HttpApi ID to be used by app stack
+    Value: !Ref TinyUrlHttpApi
+    Export:
+      Name: TinyUrlHttpApi-ApiId
+
+  BaseUrl:
+    Description: Base URL for HttpApi
+    Value: !Sub "https://${TinyUrlHttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+    Export:
+      Name: TinyUrlHttpApi-BaseUrl
