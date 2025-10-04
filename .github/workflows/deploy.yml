@@ -1,4 +1,4 @@
-name: Deploy SAM (Milestone 1)
+name: Deploy SAM (Two-Stack: Infra then App)
 
 on:
   push:
@@ -26,24 +26,66 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: SAM Build
-        working-directory: sam-hello
+      # --- Stack 1: INFRA ---
+      - name: SAM Build (infra)
+        working-directory: sam-infra
         run: sam build
 
-      - name: SAM Deploy
-        working-directory: sam-hello
+      - name: SAM Deploy (infra)
+        working-directory: sam-infra
         run: |
           sam deploy \
-            --stack-name tinyurl-m1-hello-v2 \
+            --stack-name tinyurl-infra \
             --resolve-s3 \
             --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM \
             --region ${{ secrets.AWS_REGION }}
 
-      - name: Show API URL Output
+      - name: Read Infra Outputs
+        id: infra
+        run: |
+          API_ID=$(aws cloudformation describe-stacks \
+            --stack-name tinyurl-infra \
+            --region ${{ secrets.AWS_REGION }} \
+            --query "Stacks[0].Outputs[?OutputKey=='ApiId'].OutputValue" \
+            --output text)
+
+          BASE_URL=$(aws cloudformation describe-stacks \
+            --stack-name tinyurl-infra \
+            --region ${{ secrets.AWS_REGION }} \
+            --query "Stacks[0].Outputs[?OutputKey=='BaseUrl'].OutputValue" \
+            --output text)
+
+          echo "api_id=$API_ID"   >> $GITHUB_OUTPUT
+          echo "base_url=$BASE_URL" >> $GITHUB_OUTPUT
+          echo "Infra ApiId=$API_ID"
+          echo "Infra BaseUrl=$BASE_URL"
+
+      # --- Stack 2: APP ---
+      - name: SAM Build (app)
+        working-directory: sam-app
+        run: sam build
+
+      - name: SAM Deploy (app)
+        working-directory: sam-app
+        run: |
+          sam deploy \
+            --stack-name tinyurl-app \
+            --resolve-s3 \
+            --no-confirm-changeset \
+            --no-fail-on-empty-changeset \
+            --capabilities CAPABILITY_IAM \
+            --region ${{ secrets.AWS_REGION }} \
+            --parameter-overrides \
+              ApiId=${{ steps.infra.outputs.api_id }} \
+              BaseUrl=${{ steps.infra.outputs.base_url }} \
+              TableName=url-mappings
+
+      - name: Show App Outputs
         run: |
           aws cloudformation describe-stacks \
-            --stack-name tinyurl-m1-hello-v2 \
+            --stack-name tinyurl-app \
             --region ${{ secrets.AWS_REGION }} \
             --query "Stacks[0].Outputs" \
             --output table || true
