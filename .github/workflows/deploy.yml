@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  deploy-app:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,15 +26,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: SAM Build
-        working-directory: sam-hello
+      - name: SAM Build (app)
+        working-directory: sam-app
         run: sam build
 
-      - name: SAM Deploy
-        working-directory: sam-hello
+      - name: SAM Deploy (app)
+        working-directory: sam-app
         run: |
           sam deploy \
-            --stack-name tinyurl-m1-hello-v2 \
+            --stack-name tinyurl-app \
             --resolve-s3 \
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
@@ -44,7 +44,7 @@ jobs:
       - name: Show API URL Output
         run: |
           aws cloudformation describe-stacks \
-            --stack-name tinyurl-m1-hello-v2 \
+            --stack-name tinyurl-app \
             --region ${{ secrets.AWS_REGION }} \
             --query "Stacks[0].Outputs" \
             --output table || true
