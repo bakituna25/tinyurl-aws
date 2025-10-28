@@ -1,6 +1,6 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
-Description: TinyURL - SAM app (Create + Redirect) using implicit REST API
+Description: TinyURL - SAM app (Create + Redirect + Archiver) using implicit REST API
 
 Globals:
   Function:
@@ -14,6 +14,14 @@ Globals:
       AllowOrigin: "'*'"
       AllowMethods: "'GET,POST,OPTIONS'"
       AllowHeaders: "'Content-Type,Authorization'"
+
+Parameters:
+  # Provide the S3 bucket where archived JSON objects will be written.
+  # You can create this bucket separately and pass its name when deploying:
+  #   sam deploy --parameter-overrides ArchiveBucketName=my-tinyurl-archive-bucket
+  ArchiveBucketName:
+    Type: String
+    Description: "S3 bucket name where archived short URL records will be written (required for Archiver)."
 
 Resources:
   CreateUrlFunction:
@@ -54,7 +62,50 @@ Resources:
             Path: /{shortCode}
             Method: GET
 
+  #########################################################
+  # Archiver: scans old items, writes them to S3 and (opt)
+  # deletes them from DynamoDB. Safe-by-default (DRY_RUN).
+  #########################################################
+  ArchiverFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: archiver/
+      Handler: app.lambda_handler
+      # small timeout — adjust if you expect huge scans or processing
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          TABLE_NAME: url-mappings
+          ARCHIVE_BUCKET: !Ref ArchiveBucketName
+          # Default policy: dry-run mode ON. Turn to "false" to enable deletes
+          CUTOFF_DAYS: "90"
+          DRY_RUN: "true"
+          BATCH_SIZE: "25"
+          MAX_ITEMS: "500"
+      Policies:
+        - AWSLambdaBasicExecutionRole
+        # DynamoDB: need Scan / GetItem / DeleteItem (CRUD)
+        - DynamoDBCrudPolicy:
+            TableName: url-mappings
+        # S3: need PutObject on archive bucket
+        - S3CrudPolicy:
+            BucketName: !Ref ArchiveBucketName
+      # Schedule event: runs once per day. Modify Schedule expression to your liking.
+      Events:
+        DailyArchive:
+          Type: Schedule
+          Properties:
+            # change to 'rate(1 hour)' or a cron expression if needed
+            Schedule: rate(1 day)
+            # Optional: input payload for the invocation (can be empty)
+            Input: '{}'
+
 Outputs:
   UrlApiBase:
     Description: Base URL for TinyURL
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
+
+  ArchiverFunctionName:
+    Description: "Name of the Archiver Lambda function (useful for testing/invoke)"
+    Value: !Ref ArchiverFunction
