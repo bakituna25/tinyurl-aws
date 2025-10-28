@@ -19,7 +19,7 @@ Parameters:
   # Provide the S3 bucket where archived JSON objects will be written.
   # You can create this bucket separately and pass its name when deploying:
   #   sam deploy --parameter-overrides ArchiveBucketName=my-tinyurl-archive-bucket
-  ArchiveBucketName:
+  ArchiveBucketName: tinyurl-archive-290690312607-eu-central-1
     Type: String
     Description: "S3 bucket name where archived short URL records will be written (required for Archiver)."
 
