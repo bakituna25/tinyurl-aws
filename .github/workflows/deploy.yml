@@ -26,6 +26,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      # YENİ EKLENEN ADIM: Python 3.9'u kur
+      - name: Setup Python 3.9
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+
       - name: SAM Build (app)
         working-directory: sam-app
         run: sam build
@@ -49,3 +55,4 @@ jobs:
             --region ${{ secrets.AWS_REGION }} \
             --query "Stacks[0].Outputs" \
             --output table || true
+
