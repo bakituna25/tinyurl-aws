@@ -4,7 +4,7 @@ Description: TinyURL - SAM app (Create + Redirect + Archiver) using implicit RES
 
 Globals:
   Function:
-    Runtime: python3.12
+    Runtime: python3.9  # <-- HATA BURADAYDI: 3.12'den 3.9'a DÜZELTİLDİ
     Timeout: 10
     MemorySize: 256
     Architectures:
