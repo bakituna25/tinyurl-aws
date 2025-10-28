@@ -39,7 +39,8 @@ jobs:
             --no-confirm-changeset \
             --no-fail-on-empty-changeset \
             --capabilities CAPABILITY_IAM \
-            --region ${{ secrets.AWS_REGION }}
+            --region ${{ secrets.AWS_REGION }} \
+            --parameter-overrides ArchiveBucketName=bakitunayildiz-tinyurl-archive-290690312607-eu-central-1
 
       - name: Show API URL Output
         run: |
