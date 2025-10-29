@@ -22,8 +22,9 @@ This section outlines the project’s milestone-based progress and the quick ver
 - ⏳ **Milestone 4 — Caching with Redis (MMP)**  
   - Not yet implemented. Planned: cache-aside strategy (Redis → DynamoDB → Redis).
 
-- ⏳ **Milestone 5 — Storage Tiering & Optimization (MMP)**  
-  - Not yet implemented. Planned: archive infrequently accessed data to S3 and rehydrate on demand.
-
+- ✅ **Milestone 5 — Storage Tiering & Optimization (MMP)**
+  - **Implemented.** Infrequently accessed data is automatically archived to S3 by a scheduled Lambda.
+  - Archived links are "re-hydrated" (restored) back into DynamoDB upon access.
+    
 - ✅ **Milestone 6 — Custom URLs (MLP)**  
   - Supports `custom_alias` creation; returns **409 Conflict** if alias already exists.
